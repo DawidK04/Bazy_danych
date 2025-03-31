@@ -1,16 +1,15 @@
 USE [Biblioteka]
 GO
 
-CREATE TABLE  [dbo].users (
-	id INT IDENTITY(1,1) PRIMARY KEY ,
-	[name] varchar(100) NOT NULL
-)
+--DROP TABLE IF EXISTS [db].[books];
+--GO
 
+select * FROM [INFORMATION_SCHEMA].[TABLES]
 
-CREATE TABLE	[dbo].[books] (
+IF EXISTS (SELECT 1 FROM [INFORMATION_SCHEMA].[TABLES] WHERE TABLE_NAME ='books' )
+CREATE TABLE [dbo].[books] (
 	[id] [int] IDENTITY(1,1) NOT NULL,
-	[title] [nvarchar](200) NOT NULL,
-	[author] [varchar](100) NOT NULL,
+	[title] [nvarchar](200) NOT NULL, 
 	[category] [varchar](50) NULL,
 	[publisher] [varchar](100) NOT NULL,
 	[publicationYear] [int] NOT NULL,
@@ -19,9 +18,8 @@ CREATE TABLE	[dbo].[books] (
 	audit_user [INT] NOT NULL ,
 	FOREIGN KEY (audit_user) REFERENCES dbo.users(id)
 )
-GO
 
-
+IF EXISTS (SELECT 1 FROM [INFORMATION_SCHEMA].[TABLES] WHERE TABLE_NAME ='author' )
 CREATE TABLE [dbo].[author] (
 	[id] [int] IDENTITY(1,1) PRIMARY KEY ,
 	[firstName] [varchar](100) ,
@@ -32,17 +30,25 @@ CREATE TABLE [dbo].[author] (
 	FOREIGN KEY (audit_user) REFERENCES dbo.users(id)
 )
 
+IF EXISTS (SELECT 1 FROM [INFORMATION_SCHEMA].[TABLES] WHERE TABLE_NAME ='authorBooks' )
 CREATE TABLE [dbo].authorBooks (
-	id INT PRIMARY KEY,
+	--id INT PRIMARY KEY,
 	authorID INT NOT NULL ,
 	bookID INT NOT NULL ,
 	audit_user [INT] NOT NULL,
+	PRIMARY KEY (authorID, bookID),
+	-- dodac relacje do autora
+	-- dodac relacje do ksiazki 
 	FOREIGN KEY (audit_user) REFERENCES dbo.users(id),
 )
 
+IF EXISTS (SELECT 1 FROM [INFORMATION_SCHEMA].[TABLES] WHERE TABLE_NAME ='users' )
+CREATE TABLE [dbo].users (
+	id INT IDENTITY(1,1) PRIMARY KEY,
+	[name] varchar(100) NOT NULL
+)
 
-
-
+IF EXISTS (SELECT 1 FROM [INFORMATION_SCHEMA].[TABLES] WHERE TABLE_NAME ='clients' )
 CREATE TABLE [dbo].clients (
 	id INT IDENTITY(1,1) PRIMARY KEY,
 	[firstName] [varchar](100) NOT NULL ,
@@ -56,35 +62,59 @@ CREATE TABLE [dbo].clients (
 	FOREIGN KEY (audit_user) REFERENCES dbo.users(id)
 )
 
+IF EXISTS (SELECT 1 FROM [INFORMATION_SCHEMA].[TABLES] WHERE TABLE_NAME ='borrowings' )
+CREATE TABLE [dbo].borrowings (
+	id INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+	bookID INT NOT NULL,
+	clientID INT NOT NULL,
+	borrowDate DATETIME NOT NULL,
+	returnDate DATETIME,
+	dueDate DATE NOT NULL,
+	[status] VARCHAR(20) NOT NULL CHECK (STATUS IN ('wypozyczona', 'zwrocona', 'zalegla'))
+);
+GO
 
-CREATE TABLE [dbo].borrowings(
-	id INT IDENTITY(1,1) PRIMARY KEY,
-	bookID,
-	clientID,
-	borrowDate,
-	returnDate,
-	dueDate,
-	status ("Wypozyczona", "Zwrocona", "Zalegla")
+IF EXISTS (SELECT 1 FROM [INFORMATION_SCHEMA].[TABLES] WHERE TABLE_NAME ='reservations' )
+CREATE TABLE [dbo].reservations (
+	ID INT IDENTITY PRIMARY KEY NOT NULL,
+	BOOK_ID INT NOT NULL,
+	CLIENT_ID INT NOT NULL,
+	--BOOK_NAME VARCHAR (100) NOT NULL,
+	--CLIENT_NAME VARCHAR (100) NOT NULL,
+	TIME_OF_BORROW DATETIME NOT NULL,
+	FOREIGN KEY (BOOK_ID) REFERENCES dbo.books(id),
+	FOREIGN KEY (CLIENT_ID) REFERENCES dbo.clients(id),
+);
+
+IF EXISTS (SELECT 1 FROM [INFORMATION_SCHEMA].[TABLES] WHERE TABLE_NAME ='fines' )
+--select * from  sys.objects WHERE object_id = OBJECT_ID('clients')
+--IF OBJECT_ID('clients') IS NOT NULL
+CREATE TABLE [dbo].fines (
+ID INT IDENTITY PRIMARY KEY NOT NULL,
+BOOK_ID INT NOT NULL,
+CLIENT_ID INT NOT NULL,
+AMOUNT DECIMAL(10, 2) NOT NULL,
+FINE_DATE DATETIME NOT NULL DEFAULT GETDATE(),
+STATUS VARCHAR(20) NOT NULL CHECK (STATUS IN ('oplacona', 'nie zaplacona')),
+FOREIGN KEY (BOOK_ID) REFERENCES dbo.books(id),
+FOREIGN KEY (CLIENT_ID) REFERENCES dbo.clients(id)
+);
+GO
+
+CREATE TABLE [dbo].[status] (
+	id INT PRIMARY KEY ,
 )
 
-CREATE TABLE Reservation (
-
-)
 
 
-#zastanowic sie jakie reguly dodac do kolumn oraz czy i jak rozbudowac tabele
 
-1:1
-1:&
-&:1
-&:&
-lista tabel:
+--select
+--t.name,
+--i.name,
+--i.type_desc
+--from sys.indexes i
+--INNER JOIN sys.tables t ON i.object_id - t.object_id
 
-- books
-- author
-- authorBooks &:&
-- user (pracownicy)
-- czytelnicy / klienci
-- wypozyczenia (ksiazka i czytelnik)
-- rezerwacja (ksiazka, czytelnik)
-- kary (czytelnik, wypozyczenie)
+
+--select i.* from sys.dm_db_index_usage_stats i
+--INNER JOIN sys.tables t ON i.object_id - t.object_id
